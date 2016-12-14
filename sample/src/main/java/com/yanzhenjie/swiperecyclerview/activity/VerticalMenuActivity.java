@@ -24,7 +24,6 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.yanzhenjie.recyclerview.swipe.Closeable;
@@ -42,11 +41,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created on 2016/7/27.
- *
- * @author Yan Zhenjie.
+ * Created by Yan Zhenjie on 2016/8/25.
  */
-public class AllMenuActivity extends AppCompatActivity {
+public class VerticalMenuActivity extends AppCompatActivity {
 
     private Activity mContext;
 
@@ -68,7 +65,7 @@ public class AllMenuActivity extends AppCompatActivity {
 
         mStrings = new ArrayList<>();
         for (int i = 0; i < 30; i++) {
-            mStrings.add("我是第" + i + "个。");
+            mStrings.add("我 我 我 我\n是 是 是 是\n第 第 第 第\n" + i + " " + i + " " + i + " " + i + "\n个 个 个 个\n，\n我 我 我 我\n是 是 是 是\n竖 竖 竖 竖\n型 型 型 型\n菜 菜 菜 菜 \n单 单 单 单");
         }
         mSwipeMenuRecyclerView = (SwipeMenuRecyclerView) findViewById(R.id.recycler_view);
         mSwipeMenuRecyclerView.setLayoutManager(new LinearLayoutManager(this));// 布局管理器。
@@ -95,53 +92,27 @@ public class AllMenuActivity extends AppCompatActivity {
         public void onCreateMenu(SwipeMenu swipeLeftMenu, SwipeMenu swipeRightMenu, int viewType) {
             int width = getResources().getDimensionPixelSize(R.dimen.item_height);
 
-            // MATCH_PARENT 自适应高度，保持和内容一样高；也可以指定菜单具体高度，也可以用WRAP_CONTENT。
-            int height = ViewGroup.LayoutParams.MATCH_PARENT;
+            // 设置菜单方向为竖型的。
+            swipeRightMenu.setOrientation(SwipeMenu.VERTICAL);
 
-            // 添加左侧的，如果不添加，则左侧不会出现菜单。
-            {
-                SwipeMenuItem addItem = new SwipeMenuItem(mContext)
-                        .setBackgroundDrawable(R.drawable.selector_green)// 点击的背景。
-                        .setImage(R.mipmap.ic_action_add) // 图标。
-                        .setWidth(width) // 宽度。
-                        .setHeight(height); // 高度。
-                swipeLeftMenu.addMenuItem(addItem); // 添加一个按钮到左侧菜单。
 
-                SwipeMenuItem closeItem = new SwipeMenuItem(mContext)
-                        .setBackgroundDrawable(R.drawable.selector_red)
-                        .setImage(R.mipmap.ic_action_close)
-                        .setWidth(width)
-                        .setHeight(height);
+            SwipeMenuItem deleteItem = new SwipeMenuItem(mContext)
+                    .setBackgroundDrawable(R.drawable.selector_red)
+                    .setImage(R.mipmap.ic_action_delete)
+                    .setText("删除") // 文字，还可以设置文字颜色，大小等。。
+                    .setTextColor(Color.WHITE)
+                    .setWidth(width)
+                    .setHeight(0)// 设置高度为0。
+                    .setWeight(1);// 设置高度的Weight。
+            swipeRightMenu.addMenuItem(deleteItem);// 添加一个按钮到右侧侧菜单。
 
-                swipeLeftMenu.addMenuItem(closeItem); // 添加一个按钮到左侧菜单。
-            }
-
-            // 添加右侧的，如果不添加，则右侧不会出现菜单。
-            {
-                SwipeMenuItem deleteItem = new SwipeMenuItem(mContext)
-                        .setBackgroundDrawable(R.drawable.selector_red)
-                        .setImage(R.mipmap.ic_action_delete)
-                        .setText("删除") // 文字，还可以设置文字颜色，大小等。。
-                        .setTextColor(Color.WHITE)
-                        .setWidth(width)
-                        .setHeight(height);
-                swipeRightMenu.addMenuItem(deleteItem);// 添加一个按钮到右侧侧菜单。
-
-                SwipeMenuItem closeItem = new SwipeMenuItem(mContext)
-                        .setBackgroundDrawable(R.drawable.selector_purple)
-                        .setImage(R.mipmap.ic_action_close)
-                        .setWidth(width)
-                        .setHeight(height);
-                swipeRightMenu.addMenuItem(closeItem); // 添加一个按钮到右侧菜单。
-
-                SwipeMenuItem addItem = new SwipeMenuItem(mContext)
-                        .setBackgroundDrawable(R.drawable.selector_green)
-                        .setText("添加")
-                        .setTextColor(Color.WHITE)
-                        .setWidth(width)
-                        .setHeight(height);
-                swipeRightMenu.addMenuItem(addItem); // 添加一个按钮到右侧菜单。
-            }
+            SwipeMenuItem closeItem = new SwipeMenuItem(mContext)
+                    .setBackgroundDrawable(R.drawable.selector_purple)
+                    .setImage(R.mipmap.ic_action_close)
+                    .setWidth(width)
+                    .setHeight(0)// 设置高度为0。
+                    .setWeight(1);// 设置高度的Weight。
+            swipeRightMenu.addMenuItem(closeItem); // 添加一个按钮到右侧菜单。
         }
     };
 

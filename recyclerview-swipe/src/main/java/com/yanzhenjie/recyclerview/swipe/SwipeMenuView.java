@@ -16,6 +16,9 @@
 package com.yanzhenjie.recyclerview.swipe;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
+import android.graphics.Typeface;
+import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.Gravity;
@@ -33,7 +36,7 @@ public class SwipeMenuView extends LinearLayout {
 
     private SwipeSwitch mSwipeSwitch;
 
-    private int mAdapterPosition;
+    private RecyclerView.ViewHolder mAdapterVIewHolder;
 
     private int mDirection;
 
@@ -66,12 +69,13 @@ public class SwipeMenuView extends LinearLayout {
         this.mSwipeSwitch = swipeSwitch;
     }
 
-    public void bindAdapterPosition(int position) {
-        this.mAdapterPosition = position;
+    public void bindAdapterViewHolder(RecyclerView.ViewHolder adapterVIewHolder) {
+        this.mAdapterVIewHolder = adapterVIewHolder;
     }
 
     private void addItem(SwipeMenuItem item, int index) {
         LayoutParams params = new LayoutParams(item.getWidth(), item.getHeight());
+        params.weight = item.getWeight();
         LinearLayout parent = new LinearLayout(getContext());
         parent.setId(index);
         parent.setGravity(Gravity.CENTER);
@@ -101,8 +105,15 @@ public class SwipeMenuView extends LinearLayout {
         int textSize = item.getTextSize();
         if (textSize > 0)
             textView.setTextSize(textSize);
-        int textColor = item.getTitleColor();
-        textView.setTextColor(textColor);
+        ColorStateList textColor = item.getTitleColor();
+        if (textColor != null)
+            textView.setTextColor(textColor);
+        int textAppearance = item.getTextAppearance();
+        if (textAppearance != 0)
+            ResCompat.setTextAppearance(textView, textAppearance);
+        Typeface typeface = item.getTextTypeface();
+        if (typeface != null)
+            textView.setTypeface(typeface);
         return textView;
     }
 
@@ -110,7 +121,7 @@ public class SwipeMenuView extends LinearLayout {
         @Override
         public void onClick(View v) {
             if (mItemClickListener != null && mSwipeSwitch != null && mSwipeSwitch.isMenuOpen()) {
-                mItemClickListener.onItemClick(mSwipeSwitch, mAdapterPosition, v.getId(), mDirection);
+                mItemClickListener.onItemClick(mSwipeSwitch, mAdapterVIewHolder.getAdapterPosition(), v.getId(), mDirection);
             }
         }
     };

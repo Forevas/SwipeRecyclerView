@@ -16,17 +16,22 @@
 package com.yanzhenjie.recyclerview.swipe;
 
 import android.content.Context;
+import android.support.annotation.IntDef;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 
 import com.yanzhenjie.recyclerview.swipe.touch.DefaultItemTouchHelper;
 import com.yanzhenjie.recyclerview.swipe.touch.OnItemMoveListener;
 import com.yanzhenjie.recyclerview.swipe.touch.OnItemMovementListener;
+import com.yanzhenjie.recyclerview.swipe.touch.OnItemStateChangedListener;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,6 +49,11 @@ public class SwipeMenuRecyclerView extends RecyclerView {
      */
     public static final int RIGHT_DIRECTION = -1;
 
+    @IntDef({LEFT_DIRECTION, RIGHT_DIRECTION})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface DirectionMode {
+    }
+
     /**
      * Invalid position.
      */
@@ -55,6 +65,8 @@ public class SwipeMenuRecyclerView extends RecyclerView {
 
     private int mDownX;
     private int mDownY;
+
+    private boolean isInterceptTouchEvent = true;
 
     private SwipeMenuCreator mSwipeMenuCreator;
     private OnSwipeMenuItemClickListener mSwipeMenuItemClickListener;
@@ -100,6 +112,24 @@ public class SwipeMenuRecyclerView extends RecyclerView {
         mDefaultItemTouchHelper.setOnItemMovementListener(onItemMovementListener);
     }
 
+    /**
+     * Set OnItemStateChangedListener.
+     *
+     * @param onItemStateChangedListener {@link OnItemStateChangedListener}.
+     */
+    public void setOnItemStateChangedListener(OnItemStateChangedListener onItemStateChangedListener) {
+        this.mDefaultItemTouchHelper.setOnItemStateChangedListener(onItemStateChangedListener);
+    }
+
+    /**
+     * Get OnItemStateChangedListener.
+     *
+     * @return {@link OnItemStateChangedListener}.
+     */
+    public OnItemStateChangedListener getOnItemStateChangedListener() {
+        return this.mDefaultItemTouchHelper.getOnItemStateChangedListener();
+    }
+
 
     /**
      * Set can long press drag.
@@ -129,6 +159,7 @@ public class SwipeMenuRecyclerView extends RecyclerView {
      */
     public void setItemViewSwipeEnabled(boolean canSwipe) {
         initializeItemTouchHelper();
+        isInterceptTouchEvent = !canSwipe;
         mDefaultItemTouchHelper.setItemViewSwipeEnabled(canSwipe);
     }
 
@@ -219,8 +250,8 @@ public class SwipeMenuRecyclerView extends RecyclerView {
      *
      * @param position position.
      */
-    public void openLeftMenu(int position) {
-        openMenu(position, LEFT_DIRECTION, SwipeMenuLayout.DEFAULT_SCROLLER_DURATION);
+    public void smoothOpenLeftMenu(int position) {
+        smoothOpenMenu(position, LEFT_DIRECTION, SwipeMenuLayout.DEFAULT_SCROLLER_DURATION);
     }
 
     /**
@@ -229,8 +260,8 @@ public class SwipeMenuRecyclerView extends RecyclerView {
      * @param position position.
      * @param duration time millis.
      */
-    public void openLeftMenu(int position, int duration) {
-        openMenu(position, LEFT_DIRECTION, duration);
+    public void smoothOpenLeftMenu(int position, int duration) {
+        smoothOpenMenu(position, LEFT_DIRECTION, duration);
     }
 
     /**
@@ -238,8 +269,8 @@ public class SwipeMenuRecyclerView extends RecyclerView {
      *
      * @param position position.
      */
-    public void openRightMenu(int position) {
-        openMenu(position, RIGHT_DIRECTION, SwipeMenuLayout.DEFAULT_SCROLLER_DURATION);
+    public void smoothOpenRightMenu(int position) {
+        smoothOpenMenu(position, RIGHT_DIRECTION, SwipeMenuLayout.DEFAULT_SCROLLER_DURATION);
     }
 
     /**
@@ -248,8 +279,8 @@ public class SwipeMenuRecyclerView extends RecyclerView {
      * @param position position.
      * @param duration time millis.
      */
-    public void openRightMenu(int position, int duration) {
-        openMenu(position, RIGHT_DIRECTION, duration);
+    public void smoothOpenRightMenu(int position, int duration) {
+        smoothOpenMenu(position, RIGHT_DIRECTION, duration);
     }
 
     /**
@@ -259,7 +290,7 @@ public class SwipeMenuRecyclerView extends RecyclerView {
      * @param direction use {@link #LEFT_DIRECTION}, {@link #RIGHT_DIRECTION}.
      * @param duration  time millis.
      */
-    public void openMenu(int position, int direction, int duration) {
+    public void smoothOpenMenu(int position, @DirectionMode int direction, int duration) {
         if (mOldSwipedLayout != null) {
             if (mOldSwipedLayout.isMenuOpen()) {
                 mOldSwipedLayout.smoothCloseMenu();
@@ -278,6 +309,15 @@ public class SwipeMenuRecyclerView extends RecyclerView {
                     mOldSwipedLayout.smoothOpenLeftMenu(duration);
                 }
             }
+        }
+    }
+
+    /**
+     * Close menu.
+     */
+    public void smoothCloseMenu() {
+        if (mOldSwipedLayout != null && mOldSwipedLayout.isMenuOpen()) {
+            mOldSwipedLayout.smoothCloseMenu();
         }
     }
 
@@ -300,43 +340,55 @@ public class SwipeMenuRecyclerView extends RecyclerView {
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent e) {
-        if (e.getPointerCount() > 1) return true;
         boolean isIntercepted = super.onInterceptTouchEvent(e);
-        int action = e.getAction();
-        int x = (int) e.getX();
-        int y = (int) e.getY();
-        switch (action) {
-            case MotionEvent.ACTION_DOWN:
-                mDownX = x;
-                mDownY = y;
-                isIntercepted = false;
+        if (!isInterceptTouchEvent) {
+            return isIntercepted;
+        } else {
+            if (e.getPointerCount() > 1) return true;
+            int action = e.getAction();
+            int x = (int) e.getX();
+            int y = (int) e.getY();
+            switch (action) {
+                case MotionEvent.ACTION_DOWN:
+                    mDownX = x;
+                    mDownY = y;
+                    isIntercepted = false;
 
-                int touchingPosition = getChildAdapterPosition(findChildViewUnder(x, y));
-                if (touchingPosition != mOldTouchedPosition && mOldSwipedLayout != null && mOldSwipedLayout.isMenuOpen()) {
-                    mOldSwipedLayout.smoothCloseMenu();
-                    isIntercepted = true;
-                }
+                    int touchingPosition = getChildAdapterPosition(findChildViewUnder(x, y));
+                    if (touchingPosition != mOldTouchedPosition && mOldSwipedLayout != null && mOldSwipedLayout.isMenuOpen()) {
+                        mOldSwipedLayout.smoothCloseMenu();
+                        isIntercepted = true;
+                    }
 
-                if (isIntercepted) {
-                    mOldSwipedLayout = null;
-                    mOldTouchedPosition = INVALID_POSITION;
-                } else {
-                    ViewHolder vh = findViewHolderForAdapterPosition(touchingPosition);
-                    if (vh != null) {
-                        View itemView = getSwipeMenuView(vh.itemView);
-                        if (itemView != null && itemView instanceof SwipeMenuLayout) {
-                            mOldSwipedLayout = (SwipeMenuLayout) itemView;
-                            mOldTouchedPosition = touchingPosition;
+                    if (isIntercepted) {
+                        mOldSwipedLayout = null;
+                        mOldTouchedPosition = INVALID_POSITION;
+                    } else {
+                        ViewHolder vh = findViewHolderForAdapterPosition(touchingPosition);
+                        if (vh != null) {
+                            View itemView = getSwipeMenuView(vh.itemView);
+                            if (itemView != null && itemView instanceof SwipeMenuLayout) {
+                                mOldSwipedLayout = (SwipeMenuLayout) itemView;
+                                mOldTouchedPosition = touchingPosition;
+                            }
                         }
                     }
-                }
-                break;
-            // They are sensitive to retain sliding and inertia.
-            case MotionEvent.ACTION_MOVE:
-            case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_CANCEL:
-                isIntercepted = handleUnDown(x, y, isIntercepted);
-                break;
+                    break;
+                // They are sensitive to retain sliding and inertia.
+                case MotionEvent.ACTION_MOVE:
+                    isIntercepted = handleUnDown(x, y, isIntercepted);
+                    ViewParent viewParent = getParent();
+                    if (viewParent != null) {
+                        viewParent.requestDisallowInterceptTouchEvent(!isIntercepted);
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                    isIntercepted = handleUnDown(x, y, isIntercepted);
+                    break;
+                case MotionEvent.ACTION_CANCEL:
+                    isIntercepted = handleUnDown(x, y, isIntercepted);
+                    break;
+            }
         }
         return isIntercepted;
     }

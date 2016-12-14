@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.yanzhenjie.swiperecyclerview.activity;
+package com.yanzhenjie.swiperecyclerview.fragment;
 
-import android.app.Activity;
+import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
 import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.Toolbar;
-import android.view.MenuItem;
+import android.support.v7.widget.LinearLayoutManager;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
@@ -32,82 +33,75 @@ import com.yanzhenjie.recyclerview.swipe.SwipeMenu;
 import com.yanzhenjie.recyclerview.swipe.SwipeMenuCreator;
 import com.yanzhenjie.recyclerview.swipe.SwipeMenuItem;
 import com.yanzhenjie.recyclerview.swipe.SwipeMenuRecyclerView;
-import com.yanzhenjie.recyclerview.swipe.touch.OnItemMoveListener;
 import com.yanzhenjie.swiperecyclerview.R;
 import com.yanzhenjie.swiperecyclerview.adapter.MenuAdapter;
 import com.yanzhenjie.swiperecyclerview.listener.OnItemClickListener;
 import com.yanzhenjie.swiperecyclerview.view.ListViewDecoration;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
- * Created by Yan Zhenjie on 2016/8/3.
+ * Created by Yan Zhenjie on 2016/8/12.
  */
-public class GridDragMenuActivity extends AppCompatActivity {
+public class MenuFragment extends Fragment {
 
-    private Activity mContext;
+    public static Fragment newInstance() {
+        MenuFragment menuFragment = new MenuFragment();
+        return menuFragment;
+    }
 
-    private List<String> mStrings;
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        mContext = context;
+    }
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_menu, container, false);
+    }
+
+    private Context mContext;
 
     private MenuAdapter mMenuAdapter;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+    private List<String> mStrings;
 
-        mContext = this;
+    private SwipeMenuRecyclerView mSwipeMenuRecyclerView;
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        mSwipeMenuRecyclerView = (SwipeMenuRecyclerView) view.findViewById(R.id.recycler_view);
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
 
         mStrings = new ArrayList<>();
         for (int i = 0; i < 30; i++) {
             mStrings.add("我是第" + i + "个。");
         }
-        SwipeMenuRecyclerView swipeMenuRecyclerView = (SwipeMenuRecyclerView) findViewById(R.id.recycler_view);
-        swipeMenuRecyclerView.setLayoutManager(new GridLayoutManager(this, 2));// 布局管理器。
-        swipeMenuRecyclerView.setHasFixedSize(true);// 如果Item够简单，高度是确定的，打开FixSize将提高性能。
-        swipeMenuRecyclerView.setItemAnimator(new DefaultItemAnimator());// 设置Item默认动画，加也行，不加也行。
-        swipeMenuRecyclerView.addItemDecoration(new ListViewDecoration());// 添加分割线。
+        mSwipeMenuRecyclerView.setLayoutManager(new LinearLayoutManager(mContext));// 布局管理器。
+        mSwipeMenuRecyclerView.setHasFixedSize(true);// 如果Item够简单，高度是确定的，打开FixSize将提高性能。
+        mSwipeMenuRecyclerView.setItemAnimator(new DefaultItemAnimator());// 设置Item默认动画，加也行，不加也行。
+        mSwipeMenuRecyclerView.addItemDecoration(new ListViewDecoration());// 添加分割线。
 
         // 为SwipeRecyclerView的Item创建菜单就两句话，不错就是这么简单：
         // 设置菜单创建器。
-        swipeMenuRecyclerView.setSwipeMenuCreator(swipeMenuCreator);
+        mSwipeMenuRecyclerView.setSwipeMenuCreator(swipeMenuCreator);
         // 设置菜单Item点击监听。
-        swipeMenuRecyclerView.setSwipeMenuItemClickListener(menuItemClickListener);
+        mSwipeMenuRecyclerView.setSwipeMenuItemClickListener(menuItemClickListener);
 
         mMenuAdapter = new MenuAdapter(mStrings);
         mMenuAdapter.setOnItemClickListener(onItemClickListener);
-        swipeMenuRecyclerView.setAdapter(mMenuAdapter);
-
-        swipeMenuRecyclerView.setLongPressDragEnabled(true);// 开启拖拽，就这么简单一句话。
-        swipeMenuRecyclerView.setOnItemMoveListener(onItemMoveListener);// 监听拖拽，更新UI。
+        mSwipeMenuRecyclerView.setAdapter(mMenuAdapter);
     }
 
     /**
-     * 当Item移动的时候。
-     */
-    private OnItemMoveListener onItemMoveListener = new OnItemMoveListener() {
-        @Override
-        public boolean onItemMove(int fromPosition, int toPosition) {
-            Collections.swap(mStrings, fromPosition, toPosition);
-            mMenuAdapter.notifyItemMoved(fromPosition, toPosition);
-            return true;// 返回true表示处理了，返回false表示你没有处理。
-        }
-
-        @Override
-        public void onItemDismiss(int position) {
-            // 当Item被滑动删除掉的时候，在这里是无效的，因为这里没有启用这个功能。
-            // 使用Menu时就不用使用这个侧滑删除啦，两个是冲突的。
-        }
-    };
-
-
-    /**
-     * 菜单创建器。
+     * 菜单创建器。在Item要创建菜单的时候调用。
      */
     private SwipeMenuCreator swipeMenuCreator = new SwipeMenuCreator() {
         @Override
@@ -167,7 +161,7 @@ public class GridDragMenuActivity extends AppCompatActivity {
     private OnItemClickListener onItemClickListener = new OnItemClickListener() {
         @Override
         public void onItemClick(int position) {
-            Toast.makeText(mContext, "我目前是第" + position + "条。", Toast.LENGTH_SHORT).show();
+            Toast.makeText(mContext, "我是第" + position + "条。", Toast.LENGTH_SHORT).show();
         }
     };
 
@@ -175,6 +169,13 @@ public class GridDragMenuActivity extends AppCompatActivity {
      * 菜单点击监听。
      */
     private OnSwipeMenuItemClickListener menuItemClickListener = new OnSwipeMenuItemClickListener() {
+        /**
+         * Item的菜单被点击的时候调用。
+         * @param closeable       closeable. 用来关闭菜单。
+         * @param adapterPosition adapterPosition. 这个菜单所在的item在Adapter中position。
+         * @param menuPosition    menuPosition. 这个菜单的position。比如你为某个Item创建了2个MenuItem，那么这个position可能是是 0、1，
+         * @param direction       如果是左侧菜单，值是：SwipeMenuRecyclerView#LEFT_DIRECTION，如果是右侧菜单，值是：SwipeMenuRecyclerView#RIGHT_DIRECTION.
+         */
         @Override
         public void onItemClick(Closeable closeable, int adapterPosition, int menuPosition, int direction) {
             closeable.smoothCloseMenu();// 关闭被点击的菜单。
@@ -184,14 +185,13 @@ public class GridDragMenuActivity extends AppCompatActivity {
             } else if (direction == SwipeMenuRecyclerView.LEFT_DIRECTION) {
                 Toast.makeText(mContext, "list第" + adapterPosition + "; 左侧菜单第" + menuPosition, Toast.LENGTH_SHORT).show();
             }
+
+            // TODO 这里特别注意，如果这里删除了Item，不要调用Adapter.notifyItemRemoved(position)，因为RecyclerView有个bug，调用这个方法后，后面的position会错误！
+            // TODO 删除Item后调用Adapter.notifyDataSetChanged()，下面是事例代码：
+            if (menuPosition == 0) {// 删除按钮被点击。
+                mStrings.remove(adapterPosition);
+                mMenuAdapter.notifyDataSetChanged();
+            }
         }
     };
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == android.R.id.home) {
-            finish();
-        }
-        return true;
-    }
 }
